@@ -54,6 +54,8 @@ class ArgumentParser(Tap):
     "allow a repository feature"
     dry_run: bool = False
     "don't actually sync, just print what would be synced"
+    org: list[str] = []
+    "organizations to include repositories from"
 
     @override
     def configure(self: Self):
@@ -62,6 +64,7 @@ class ArgumentParser(Tap):
         self.add_argument("--include", action="append")  # pyright: ignore[reportUnknownMemberType]
         self.add_argument("--exclude", action="append")  # pyright: ignore[reportUnknownMemberType]
         self.add_argument("--feature", action="append")  # pyright: ignore[reportUnknownMemberType]
+        self.add_argument("--org", action="append")  # pyright: ignore[reportUnknownMemberType]
 
 
 def make_logger(name: str, level: str) -> Logger:
@@ -141,6 +144,11 @@ def main() -> None:
     source_repos: list[SourceRepository] = []
     for real in real_repos:
         source_repos.append(SourceRepository(real=real))
+
+    for org in args.org:
+        org_repos = paginate(source_client.organization.org_list_repos, org)
+        for real in org_repos:
+            source_repos.append(SourceRepository(real=real))
 
     filter = RepositoryFilter(
         includes=args.include,
